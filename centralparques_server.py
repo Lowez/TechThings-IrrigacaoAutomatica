@@ -1,4 +1,4 @@
-import socket, json, pickle
+import socket, pickle
 
 # Servidor responsável por ativar irrigadores de cada parque
 
@@ -6,6 +6,15 @@ import socket, json, pickle
 # tanto no server.py quanto no client.py
 server_ip = '127.0.0.1'
 server_port = 12345
+
+class SensorReport:
+    def __init__(self, umidadedePercentage, previsaoChuva):
+        self.umidadePercentage = umidadedePercentage
+        self.previsaoChuva = previsaoChuva
+
+def irrigacaoValidation(reportData):
+    #Logica para definir irrigação ou não
+    return "False"
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -17,19 +26,28 @@ try:
     server_socket.listen(4)
     print("Servidor pronto para receber conexão")
 
-    while True:
-        client_socket, client_address = server_socket.accept()
-        print("Conexão estabelecida com:", client_address)
+    # while True:
+    client_socket, client_address = server_socket.accept()
+    print("Conexão estabelecida com:", client_address)
 
-        # Recebe os dados do cliente
-        data = client_socket.recv(1024).decode()
-        json_data = json.loads(data)
-        print("Informação recebida", json_data)
+    report = client_socket.recv(4096)
+    reportData = pickle.loads(report)
 
-        client_socket.sendall(json_data)
+    print(
+        "\n" +
+        "------ Sensor Parque " + reportData.sensorId + " ------\n" +
+        "\\\\\\\\\\\\\\\\\\ REPORT \\\\\\\\\\\\\\\\\\\n\n" +
+        "# Porcentagem de chuva: " + reportData.umidadePercentage + "%\n" + 
+        "# Previsão de chuva: " + reportData.previsaoChuva + "\n\n" +
+        "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n" +
+        "\n"
+    )
 
-        client_socket.close()
-        print("Conexão encerrada com: ", client_address)
+    ativarIrrigacao = irrigacaoValidation(reportData)
+    client_socket.send(ativarIrrigacao.encode())
+
+    client_socket.close()
+    print("Conexão encerrada com: ", client_address)
 
 finally:
 
