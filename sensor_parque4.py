@@ -1,24 +1,56 @@
-import socket
+import socket, pickle
 
-# Envia as informações sobre umidade dos solos e ocorrência futura de chuva nos parques
+class SensorReport:
+    def __init__(self):
+        self.sensorId = "4"
+        self.umidadePercentage = input("Porcentagem de umidade detectada: ")
+        self.previsaoChuva = input("Previsão de chuva para próximo dia: ")
 
-server_ip = '127.0.0.1'
-server_port = 12345
+def main():
+    import socket, pickle
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Envia as informações sobre umidade dos solos e ocorrência futura de chuva nos parques
 
-try:
-    client_socket.connect((server_ip, server_port))
+    server_ip = '127.0.0.1'
+    server_port = 12345
 
-    message = input("Digite um string: ")
-    client_socket.sendall(message.encode())
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    modified_message = client_socket.recv(1024).decode()
-    print("String modificada: ", modified_message)
+    try:
+        client_socket.connect((server_ip, server_port))
 
-except ConnectionRefusedError:
-    print("Não foi possível conectar ao servidor")
+        # Cria o objeto de report do sensor
+        report = SensorReport()
 
-finally:
+        # Codifica para o envio do objeto para o servidor
+        reportString = pickle.dumps(report)
+        client_socket.send(reportString)
 
-    client_socket.close()
+        # Imprime os dados enviados
+        print(
+            "\n" +
+            "------ Sensor Parque " + report.sensorId + " ------\n" +
+            "\\\\\\\\\\\\\\\\\\ REPORT \\\\\\\\\\\\\\\\\\\n\n" +
+            "# Porcentagem de chuva: " + report.umidadePercentage + "%\n" + 
+            "# Previsão de chuva: " + report.previsaoChuva + "\n\n" +
+            "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n" +
+            "\n"
+        )
+
+        # Recebe o retorno do servidor para irrigar ou não o parque
+        report = client_socket.recv(4096).decode()
+
+        if (report == "True"):
+            print("\nIrrigando Parque...\n")
+        else:
+            print("\nNão será feita irrigação\n")
+
+    except ConnectionRefusedError:
+        print("Não foi possível conectar ao servidor")
+
+    finally:
+
+        client_socket.close()
+
+if __name__ == "__main__":
+    main()
